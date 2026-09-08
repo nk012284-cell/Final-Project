@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:mobil_app_project/pages/Onboarding_Screen.dart';
+import 'package:mobil_app_project/Screens/Onboarding_Scrrens/mainsliderscreen.dart';
 
-class Screen1 extends StatefulWidget {
-  const Screen1({super.key});
+class MyWidget extends StatefulWidget {
+  const MyWidget({super.key});
+
   @override
-  State<Screen1> createState() => _Screen1State();
+  State<MyWidget> createState() => _MyWidgetState();
 }
 
-class _Screen1State extends State<Screen1> {
+class _MyWidgetState extends State<MyWidget> {
   @override
   void initState() {
     super.initState();
@@ -15,11 +16,12 @@ class _Screen1State extends State<Screen1> {
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainSlider()),
+          MaterialPageRoute(builder: (context) => const Mainsliderscreen()),
         );
       }
     });
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

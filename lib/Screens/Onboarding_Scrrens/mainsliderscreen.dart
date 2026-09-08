@@ -1,30 +1,30 @@
 import 'package:flutter/material.dart';
-import 'Login_page.dart';
+import 'package:mobil_app_project/Screens/Onboarding_Scrrens/loginpage.dart';
 
-class MainSlider extends StatefulWidget {
-  const MainSlider({super.key});
+class Mainsliderscreen extends StatefulWidget {
+  const Mainsliderscreen({super.key});
 
   @override
-  State<MainSlider> createState() => _MainSliderState();
+  State<Mainsliderscreen> createState() => _MainsliderscreenState();
 }
 
-class _MainSliderState extends State<MainSlider> {
+class _MainsliderscreenState extends State<Mainsliderscreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
   final List<Map<String, String>> _pages = [
     {
-      'image': 'assets/images/svgs/property.png',
+      'image': 'assets/images/final.png',
       'title': 'Find your perfect rental on\nRedfin',
       'subtitle': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
     },
     {
-      'image': 'assets/images/ghar.png',
+      'image': 'assets/images/second.png',
       'title': 'Sell for top dollar and save\nthousands on fees',
       'subtitle': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
     },
     {
-      'image': 'assets/images/image 2.png',
+      'image': 'assets/images/third.png',
       'title': 'Local expertise for luxury\nhomes',
       'subtitle': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
     },
@@ -33,9 +33,7 @@ class _MainSliderState extends State<MainSlider> {
   void _navigateToLogin() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => const LoginPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const loginpage()),
     );
   }
 

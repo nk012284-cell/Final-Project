@@ -1,15 +1,15 @@
-﻿// login_page.dart
 import 'package:flutter/material.dart';
-import 'Login.dart';
+import 'package:mobil_app_project/Screens/uthentication/loginemptypage.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class loginpage extends StatefulWidget {
+  const loginpage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<loginpage> createState() => _loginpageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _loginpageState extends State<loginpage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,7 +20,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             children: [
               const Spacer(),
-              Image.asset('assets/images/tree.png', height: 60),
+              SvgPicture.asset("assets/images/svg/tree1.svg", height: 60),
               const SizedBox(height: 24),
               const Text(
                 "Get Started",
@@ -41,13 +41,21 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 12),
               _buildSocialButton(
-                iconWidget: const Icon(Icons.apple, color: Colors.black, size: 24),
+                iconWidget: const Icon(
+                  Icons.apple,
+                  color: Colors.black,
+                  size: 24,
+                ),
                 label: 'Sign in with Apple',
                 onPressed: () {},
               ),
               const SizedBox(height: 12),
               _buildSocialButton(
-                iconWidget: const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24),
+                iconWidget: const Icon(
+                  Icons.facebook,
+                  color: Color(0xFF1877F2),
+                  size: 24,
+                ),
                 label: 'Sign in with Facebook',
                 onPressed: () {},
               ),
@@ -58,7 +66,10 @@ class _LoginPageState extends State<LoginPage> {
                   Expanded(child: Divider(color: Color(0xFFEEEEEE))),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('Or continue with', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    child: Text(
+                      'Or continue with',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
                   ),
                   Expanded(child: Divider(color: Color(0xFFEEEEEE))),
                 ],
@@ -70,26 +81,28 @@ class _LoginPageState extends State<LoginPage> {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                  Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const Loginstate(),
-        ),
-      );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) {
+                          return Loginemptypage();
+                        },
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0F7D43),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text(
                     'Sign in with Email',
-                    
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      
                     ),
                   ),
                 ),
@@ -99,12 +112,19 @@ class _LoginPageState extends State<LoginPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("Don't have an account? ", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  const Text(
+                    "Don't have an account? ",
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
                   GestureDetector(
                     onTap: () {},
                     child: const Text(
                       "Sign Up",
-                      style: TextStyle(color: Color(0xFF0F7D43), fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        color: Color(0xFF0F7D43),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ],
@@ -130,22 +150,29 @@ class _LoginPageState extends State<LoginPage> {
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: Color(0xFFE8E8E8)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (iconPath != null) 
-              Image.asset(iconPath, height: 20, width: 20) 
-            else if (iconWidget != null) 
+            if (iconPath != null)
+              Image.asset(iconPath, height: 20, width: 20)
+            else if (iconWidget != null)
               iconWidget,
             const SizedBox(width: 12),
-            Text(label, style: const TextStyle(color: Colors.black87, fontSize: 14, fontWeight: FontWeight.w600)),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
-
-
