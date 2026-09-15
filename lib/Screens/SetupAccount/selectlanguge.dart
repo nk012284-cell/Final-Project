@@ -73,7 +73,7 @@ class _SelectLanguageState extends State<SelectLanguage> {
 
               // Custom Dropdown Field
               DropdownButtonFormField<String>(
-                value: _selectedLanguage,
+                initialValue: _selectedLanguage,
                 hint: Text(
                   "Select language",
                   style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
@@ -145,7 +145,7 @@ class _SelectLanguageState extends State<SelectLanguage> {
                             context,
                             MaterialPageRoute(
                               builder: (context) {
-                                return location();
+                                return const LocationPage();
                               },
                             ),
                           );

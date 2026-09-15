@@ -10,10 +10,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobil_app_project/main.dart';
 
 void main() {
-  testWidgets('home screen loads', (WidgetTester tester) async {
+  testWidgets('onboarding screen loads', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    expect(find.text('Featured Property'), findsOneWidget);
-    expect(find.text('Our Recomendation'), findsOneWidget);
+    expect(find.text('Find your perfect rental on\nRedfin'), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
   });
 }

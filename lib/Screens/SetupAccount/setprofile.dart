@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:mobil_app_project/Screens/SetupAccount/setupcompleted.dart';
+import 'package:mobil_app_project/screens/SetupAccount/setupcompleted.dart';
 import 'package:image_picker/image_picker.dart';
 
 // ignore: camel_case_types

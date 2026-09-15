@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mobil_app_project/models/account_settings_models.dart';
+import 'package:mobil_app_project/network/apiservices.dart';
+import 'package:mobil_app_project/network/networkclient.dart';
 
 // ignore: camel_case_types
 class languages extends StatefulWidget {
@@ -15,6 +18,8 @@ class _languagesState extends State<languages> {
 
   // Track the currently selected language
   String selectedLanguage = 'English (US)';
+  String? selectedLanguageCode;
+  final ApiServices _api = ApiServices(NetworkClient());
 
   final List<String> suggestedLanguages = [
     'English (US)',
@@ -30,6 +35,36 @@ class _languagesState extends State<languages> {
     'Chineses',
     'Bengali',
   ];
+
+  List<LanguageOption> _availableLanguages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLanguages();
+  }
+
+  Future<void> _loadLanguages() async {
+    try {
+      final response = await _api.languages();
+      if (!mounted || response.statusCode != 200) return;
+      final data = response.data;
+      if (data is List<dynamic>) {
+        setState(() {
+          _availableLanguages = data
+              .whereType<Map<String, dynamic>>()
+              .map(LanguageOption.fromJson)
+              .toList();
+        });
+      }
+    } catch (_) {
+      // Keep the local language fallback when the public request fails.
+    }
+  }
+
+  List<String> get _languageNames => _availableLanguages.isEmpty
+      ? [...suggestedLanguages, ...otherLanguages]
+      : _availableLanguages.map((language) => language.name).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -67,13 +102,8 @@ class _languagesState extends State<languages> {
           child: Column(
             children: [
               _buildLanguageCard(
-                title: 'Suggested Languages',
-                languages: suggestedLanguages,
-              ),
-              const SizedBox(height: 16),
-              _buildLanguageCard(
-                title: 'Others Languages',
-                languages: otherLanguages,
+                title: 'Available Languages',
+                languages: _languageNames,
               ),
             ],
           ),
@@ -119,7 +149,14 @@ class _languagesState extends State<languages> {
                 onTap: () {
                   setState(() {
                     selectedLanguage = language;
+                    selectedLanguageCode = _availableLanguages
+                        .where((item) => item.name == language)
+                        .map((item) => item.code)
+                        .firstOrNull;
                   });
+                  if (selectedLanguageCode != null) {
+                    _api.updateProfile({"language": selectedLanguageCode});
+                  }
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),

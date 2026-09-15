@@ -1,14 +1,17 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:mobil_app_project/Screens/AccountSettings/aboutapp.dart';
-import 'package:mobil_app_project/Screens/AccountSettings/accountsecurity.dart';
-import 'package:mobil_app_project/Screens/AccountSettings/helpcenter.dart';
-import 'package:mobil_app_project/Screens/AccountSettings/languages.dart';
-import 'package:mobil_app_project/Screens/AccountSettings/notifications.dart';
-import 'package:mobil_app_project/Screens/AccountSettings/paymentaccount.dart';
-import 'package:mobil_app_project/Screens/AccountSettings/privacyandpolicy.dart';
-import 'package:mobil_app_project/Screens/AccountSettings/termsandcondition.dart';
+import 'package:mobil_app_project/screens/AccountSettings/aboutapp.dart';
+import 'package:mobil_app_project/screens/AccountSettings/accountsecurity.dart';
+import 'package:mobil_app_project/screens/AccountSettings/helpcenter.dart';
+import 'package:mobil_app_project/screens/AccountSettings/languages.dart';
+import 'package:mobil_app_project/screens/AccountSettings/notifications.dart';
+import 'package:mobil_app_project/screens/AccountSettings/paymentaccount.dart';
+import 'package:mobil_app_project/screens/AccountSettings/privacyandpolicy.dart';
+import 'package:mobil_app_project/screens/AccountSettings/termsandcondition.dart';
+import 'package:mobil_app_project/models/user_profile_model.dart';
+import 'package:mobil_app_project/network/apiservices.dart';
+import 'package:mobil_app_project/network/networkclient.dart';
 
 import 'personaldata.dart';
 
@@ -25,8 +28,34 @@ class _MyaccountState extends State<Myaccount> {
   // Selected profile image tracks either local file path or network/asset
   String? currentProfileImagePath;
   String currentProfileImageUrl = 'assets/images/profile.png';
+  UserProfileResponse? _profile;
+  final ApiServices _api = ApiServices(NetworkClient());
 
   static const Color primaryGreen = Color(0xFF2ECC71);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final response = await _api.currentUser();
+      if (!mounted || response.statusCode != 200) return;
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        setState(() {
+          _profile = UserProfileResponse.fromJson(data);
+          if (_profile?.avatarUrl?.isNotEmpty == true) {
+            currentProfileImageUrl = _profile!.avatarUrl!;
+          }
+        });
+      }
+    } catch (_) {
+      // Keep the existing local profile fallback when the request fails.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -228,14 +257,14 @@ class _MyaccountState extends State<Myaccount> {
         const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
-              'Aaron Ramsdale',
+              _profile?.fullName ?? _profile?.firstName ?? 'Your profile',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 2),
             Text(
-              'aaronramsdale@gmail.com',
+              _profile?.email ?? '',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
@@ -303,7 +332,7 @@ class _MyaccountState extends State<Myaccount> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.15),
+                  color: Colors.grey.withValues(alpha: 0.15),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
@@ -346,7 +375,7 @@ class _MyaccountState extends State<Myaccount> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: primaryGreen.withOpacity(0.4),
+                      color: primaryGreen.withValues(alpha: 0.4),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),

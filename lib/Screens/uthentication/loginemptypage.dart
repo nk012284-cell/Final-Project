@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mobil_app_project/Screens/Homepage/homev1.dart';
 import 'package:mobil_app_project/Screens/uthentication/forgotpassword.dart';
 import 'package:mobil_app_project/Screens/uthentication/register.dart';
+import 'package:mobil_app_project/models/authentication/jwt_response_model.dart';
+import 'package:mobil_app_project/network/apiservices.dart';
+import 'package:mobil_app_project/network/networkclient.dart';
+import 'package:mobil_app_project/network/session.dart';
 
 class Loginemptypage extends StatefulWidget {
   const Loginemptypage({super.key});
@@ -16,12 +21,69 @@ class _LoginemptypageState extends State<Loginemptypage> {
 
   // State variable to toggle password visibility
   bool _isObscured = true;
+  bool _isSigningIn = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  ApiServices api = ApiServices(NetworkClient());
+
+  Future<void> _signIn() async {
+    if (_isSigningIn) return;
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email and password are required")),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSigningIn = true;
+    });
+
+    try {
+      final response = await api.login({"email": email, "password": password});
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final credentials = JwtResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
+        Session.instance.setCredentials(credentials);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Homev1()),
+        );
+      } else {
+        final data = response.data;
+        final message = data is Map<String, dynamic>
+            ? data["message"]?.toString()
+            : null;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message ?? "Unable to sign in")));
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Unable to sign in. Try again later.")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSigningIn = false;
+        });
+      }
+    }
   }
 
   @override
@@ -142,7 +204,7 @@ class _LoginemptypageState extends State<Loginemptypage> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: _isSigningIn ? null : _signIn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     elevation: 0,
@@ -150,14 +212,23 @@ class _LoginemptypageState extends State<Loginemptypage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    "Sign In",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: _isSigningIn
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          "Sign In",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 28),

@@ -553,7 +553,7 @@ class _PersonaldataState extends State<Personaldata> {
 
   Widget _buildGenderDropdown() {
     return DropdownButtonFormField<String>(
-      value: selectedGender,
+      initialValue: selectedGender,
       items: genderOptions
           .map(
             (g) => DropdownMenuItem(

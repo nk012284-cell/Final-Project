@@ -1,5 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mobil_app_project/models/account_settings_models.dart';
+import 'package:mobil_app_project/network/apiservices.dart';
+import 'package:mobil_app_project/network/networkclient.dart';
 
 class Notifications extends StatefulWidget {
   const Notifications({super.key});
@@ -21,6 +24,77 @@ class _NotificationsState extends State<Notifications> {
     'Cashback': false,
     'App Updates': false,
   };
+  final ApiServices _api = ApiServices(NetworkClient());
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    try {
+      final response = await _api.notificationPreferences();
+      if (!mounted || response.statusCode != 200) return;
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final preferences = NotificationPreferencesResponse.fromJson(data);
+        setState(() {
+          _notificationSettings.addAll({
+            'Notifications': preferences.notifications,
+            'Sound': preferences.sound,
+            'Vibrate': preferences.vibrate,
+            'Special Offers': preferences.specialOffers,
+            'Payments': preferences.payments,
+            'Cashback': preferences.cashback,
+            'App Updates': preferences.appUpdates,
+          });
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _updatePreference(String key, bool value) async {
+    final previousValue = _notificationSettings[key] ?? false;
+    setState(() {
+      _notificationSettings[key] = value;
+    });
+
+    final apiKey = {
+      'Notifications': 'notifications',
+      'Sound': 'sound',
+      'Vibrate': 'vibrate',
+      'Special Offers': 'specialOffers',
+      'Payments': 'payments',
+      'Cashback': 'cashback',
+      'App Updates': 'appUpdates',
+    }[key];
+
+    if (apiKey == null) return;
+
+    try {
+      final response = await _api.updateNotificationPreferences({
+        apiKey: value,
+      });
+      if (!mounted || response.statusCode == 200) return;
+      setState(() {
+        _notificationSettings[key] = previousValue;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _notificationSettings[key] = previousValue;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +141,7 @@ class _NotificationsState extends State<Notifications> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (_isLoading) const LinearProgressIndicator(minHeight: 2),
                 Text(
                   'Push Notifications',
                   style: TextStyle(
@@ -106,13 +181,10 @@ class _NotificationsState extends State<Notifications> {
                             scale: 0.85,
                             child: CupertinoSwitch(
                               value: isEnabled,
-                              activeColor: primaryGreen,
-                              trackColor: Colors.grey.shade200,
-                              onChanged: (bool value) {
-                                setState(() {
-                                  _notificationSettings[key] = value;
-                                });
-                              },
+                              activeTrackColor: primaryGreen,
+                              inactiveTrackColor: Colors.grey.shade200,
+                              onChanged: (bool value) =>
+                                  _updatePreference(key, value),
                             ),
                           ),
                         ],

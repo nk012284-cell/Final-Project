@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:mobil_app_project/Screens/uthentication/loginemptypage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class loginpage extends StatefulWidget {
-  const loginpage({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<loginpage> createState() => _loginpageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _loginpageState extends State<loginpage> {
+class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -159,8 +159,7 @@ class _loginpageState extends State<loginpage> {
           children: [
             if (iconPath != null)
               Image.asset(iconPath, height: 20, width: 20)
-            else if (iconWidget != null)
-              iconWidget,
+            else ?iconWidget,
             const SizedBox(width: 12),
             Text(
               label,

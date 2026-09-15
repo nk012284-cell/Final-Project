@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mobil_app_project/Screens/uthentication/loginemptypage.dart';
+import 'package:mobil_app_project/network/apiservices.dart';
+import 'package:mobil_app_project/network/networkclient.dart';
 
 class CreateNewPassword extends StatefulWidget {
-  const CreateNewPassword({super.key});
+  final String ticket;
+  const CreateNewPassword({super.key, required this.ticket});
 
   @override
   State<CreateNewPassword> createState() => _CreateNewPasswordState();
@@ -22,6 +26,8 @@ class _CreateNewPasswordState extends State<CreateNewPassword> {
   bool _isConfirmPasswordFocused = false;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
+
+  ApiServices api = ApiServices(NetworkClient());
 
   @override
   void initState() {
@@ -121,8 +127,15 @@ class _CreateNewPasswordState extends State<CreateNewPassword> {
                   height: 48,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context); // Dialog close karne ke liye
-                      // Login screen par navigate karne ki logic yahan dalei
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return Loginemptypage();
+                          },
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF138048),
@@ -312,9 +325,16 @@ class _CreateNewPasswordState extends State<CreateNewPassword> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Button click karne par Dialog show hoga
-                    _showSuccessDialog(context);
+                  onPressed: () async {
+                    final response = await api.createnewpassword({
+                      "resetTicket": widget.ticket,
+                      "newPassword": _confirmPasswordController.text.toString(),
+                    });
+                    if (response.statusCode == 200) {
+                      _showSuccessDialog(context);
+                    } else {
+                      debugPrint("Register failed: ${response.statusCode}");
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF138048),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobil_app_project/Screens/SetupAccount/setprofile.dart';
+import 'package:mobil_app_project/screens/SetupAccount/setprofile.dart';
 
 // ignore: camel_case_types
 class completesetup extends StatefulWidget {

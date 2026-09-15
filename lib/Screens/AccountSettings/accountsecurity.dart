@@ -1,5 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mobil_app_project/models/security_payment_models.dart';
+import 'package:mobil_app_project/network/apiservices.dart';
+import 'package:mobil_app_project/network/networkclient.dart';
 
 class Accountsecurity extends StatefulWidget {
   const Accountsecurity({super.key});
@@ -14,6 +17,30 @@ class _AccountsecurityState extends State<Accountsecurity> {
   bool rememberPassword = true;
   bool faceId = true;
   bool biometricId = true;
+  bool _twoFactorEnabled = false;
+  final ApiServices _api = ApiServices(NetworkClient());
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTwoFactorStatus();
+  }
+
+  Future<void> _loadTwoFactorStatus() async {
+    try {
+      final response = await _api.twoFactorStatus();
+      if (!mounted || response.statusCode != 200) return;
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final status = TotpStatusResponse.fromJson(data);
+        setState(() {
+          _twoFactorEnabled = status.enabled;
+        });
+      }
+    } catch (_) {
+      // Keep the default state if the account status cannot be loaded.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,8 +129,10 @@ class _AccountsecurityState extends State<Accountsecurity> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Google Authenticator',
+                            Text(
+                              _twoFactorEnabled
+                                  ? 'Google Authenticator (On)'
+                                  : 'Google Authenticator',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
@@ -176,8 +205,8 @@ class _AccountsecurityState extends State<Accountsecurity> {
             scale: 0.85,
             child: CupertinoSwitch(
               value: value,
-              activeColor: primaryGreen,
-              trackColor: Colors.grey.shade200,
+              activeTrackColor: primaryGreen,
+              inactiveTrackColor: Colors.grey.shade200,
               onChanged: onChanged,
             ),
           ),

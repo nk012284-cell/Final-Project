@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mobil_app_project/Screens/uthentication/loginemptypage.dart';
+import 'package:mobil_app_project/network/apiservices.dart';
+import 'package:mobil_app_project/network/networkclient.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
 class Register extends StatefulWidget {
@@ -29,6 +32,8 @@ class _RegisterState extends State<Register> {
       });
     });
   }
+
+  ApiServices api = ApiServices(NetworkClient());
 
   @override
   void dispose() {
@@ -145,7 +150,27 @@ class _RegisterState extends State<Register> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    final response = await api.signup({
+                      "fullName": _nameController.text.toString(),
+                      "phoneNumber": completePhoneNumber.toString(),
+                      "email": _emailController.text,
+                      "password": _passwordController.text.toString(),
+                    });
+                    if (response.statusCode == 200) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return Loginemptypage();
+                          },
+                        ),
+                      );
+                    } else {
+                      debugPrint("Register failed: ${response.statusCode}");
+                      debugPrint(_phoneController.text);
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.grey.shade300,
                     elevation: 0,

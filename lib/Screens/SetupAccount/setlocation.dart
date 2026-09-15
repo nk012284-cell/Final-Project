@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:mobil_app_project/Screens/SetupAccount/setprofile.dart';
+import 'package:mobil_app_project/screens/SetupAccount/setprofile.dart';
 
-class location extends StatefulWidget {
-  const location({super.key});
+class LocationPage extends StatefulWidget {
+  const LocationPage({super.key});
 
   @override
-  State<location> createState() => _locationState();
+  State<LocationPage> createState() => _LocationPageState();
 }
 
-class _locationState extends State<location> {
+class _LocationPageState extends State<LocationPage> {
   final TextEditingController _locationController = TextEditingController();
 
   @override
@@ -96,7 +96,7 @@ class _locationState extends State<location> {
                 child: Container(
                   height: 180,
                   width: double.infinity,
-                  color: const Color(0xFFD4E157).withOpacity(0.3),
+                  color: const Color(0xFFD4E157).withValues(alpha: 0.3),
                   child: Stack(
                     children: [
                       // Map grid lines design
@@ -119,7 +119,7 @@ class _locationState extends State<location> {
                                 borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.08),
+                                    color: Colors.black.withValues(alpha: 0.08),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),

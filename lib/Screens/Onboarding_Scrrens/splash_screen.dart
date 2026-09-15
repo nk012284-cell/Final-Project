@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:mobil_app_project/Screens/Onboarding_Scrrens/mainsliderscreen.dart';
 
-class MyWidget extends StatefulWidget {
-  const MyWidget({super.key});
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
 
   @override
-  State<MyWidget> createState() => _MyWidgetState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _MyWidgetState extends State<MyWidget> {
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();

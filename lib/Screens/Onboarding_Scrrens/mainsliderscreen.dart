@@ -33,7 +33,7 @@ class _MainsliderscreenState extends State<Mainsliderscreen> {
   void _navigateToLogin() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const loginpage()),
+      MaterialPageRoute(builder: (context) => const LoginPage()),
     );
   }
 

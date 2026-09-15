@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:mobil_app_project/Screens/AccountSettings/myaccount.dart';
+import 'package:mobil_app_project/models/news_model.dart';
+import 'package:mobil_app_project/screens/AccountSettings/myaccount.dart';
+import 'package:mobil_app_project/models/property_model.dart';
+import 'package:mobil_app_project/network/apiservices.dart';
+import 'package:mobil_app_project/network/networkclient.dart';
+import 'package:mobil_app_project/Screens/Homepage/dashboard_screens.dart';
+import 'package:mobil_app_project/Screens/Explore/explore_screen.dart';
 
 class Homev1 extends StatefulWidget {
   const Homev1({super.key});
@@ -14,59 +20,146 @@ class _Homev1State extends State<Homev1> {
 
   final List<String> categories = ['Popular', 'Houses', 'Apartment', 'Villa'];
 
-  // Sample data - replace with your actual model/API data
-  final List<Map<String, dynamic>> featuredProperties = [
-    {
-      'title': 'The Lakefront Estate',
-      'location': 'Lake Geneva, Switzerland',
-      'price': '\$1,320.00',
-      'beds': 6,
-      'baths': 6,
-      'imageUrl': 'assets/images/final.png', // Placeholder image path
-    },
-    {
-      'title': 'The Emerald Residence',
-      'location': 'Beverly Hills',
-      'price': '\$980.00',
-      'beds': 6,
-      'baths': 4,
-      'imageUrl': 'assets/images/second.png', // Placeholder image path
-    },
-  ];
+  final ApiServices api = ApiServices(NetworkClient());
+  final List<PropertyResponse> featuredProperties = [];
+  final List<PropertyResponse> recommendedProperties = [];
+  final Set<int> _favoriteIds = {};
+  final TextEditingController _searchController = TextEditingController();
+  bool _isLoadingProperties = true;
 
-  final List<Map<String, dynamic>> recommendedProperties = [
-    {
-      'title': 'Modern Villa',
-      'location': 'Downtown',
-      'price': '\$750.00',
-      'tag': 'Houses',
-      'liked': true,
-      'imageUrl': 'assets/images/third.png', // Placeholder image path
-    },
-    {
-      'title': 'Cozy Apartment',
-      'location': 'City Center',
-      'price': '\$540.00',
-      'tag': 'Apartment',
-      'liked': false,
-      'imageUrl': 'assets/images/fourth.png', // Placeholder image path
-    },
-  ];
-
-  final List<Map<String, dynamic>> propertyNews = [
-    {
-      'headline': "'Incredible': Awe-inspiring bayside home ticks every box",
-      'readTime': '3 mins read',
-      'imageUrl': 'assets/images/fourth.png', // Replace with your image path
-    },
-    {
-      'headline': "'Old Labor Club' warehouse to smash suburb record",
-      'readTime': '3 mins read',
-      'imageUrl': 'assets/images/fourth.png', // Replace with your image path
-    },
-  ];
+  final List<NewsResponse> propertyNews = [];
 
   static const Color primaryGreen = Color(0xFF2ECC71);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProperties();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProperties() async {
+    try {
+      final responses = await Future.wait([
+        api.featuredProperties(),
+        api.recommendedProperties(),
+        api.news(),
+      ]);
+
+      if (!mounted) return;
+
+      if (responses[0].statusCode == 200) {
+        final data = responses[0].data;
+        if (data is Map<String, dynamic>) {
+          featuredProperties
+            ..clear()
+            ..addAll(PropertyPage.fromJson(data).items);
+          _favoriteIds.addAll(
+            featuredProperties
+                .where((property) => property.isFavorite)
+                .map((property) => property.id),
+          );
+        }
+      }
+      if (responses[1].statusCode == 200) {
+        final data = responses[1].data;
+        if (data is Map<String, dynamic>) {
+          recommendedProperties
+            ..clear()
+            ..addAll(PropertyPage.fromJson(data).items);
+          _favoriteIds.addAll(
+            recommendedProperties
+                .where((property) => property.isFavorite)
+                .map((property) => property.id),
+          );
+        }
+      }
+      if (responses[2].statusCode == 200) {
+        final data = responses[2].data;
+        if (data is Map<String, dynamic>) {
+          propertyNews
+            ..clear()
+            ..addAll(NewsPage.fromJson(data).items);
+        }
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Unable to load properties")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingProperties = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _searchProperties({String? type}) async {
+    final query = _searchController.text.trim();
+    try {
+      final response = await api.searchProperties({
+        if (query.isNotEmpty) "q": query,
+        "type": ?type,
+        "page": 0,
+        "size": 20,
+      });
+      if (!mounted || response.statusCode != 200) return;
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        setState(() {
+          recommendedProperties
+            ..clear()
+            ..addAll(PropertyPage.fromJson(data).items);
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Unable to search properties")),
+      );
+    }
+  }
+
+  Future<void> _toggleFavorite(PropertyResponse property) async {
+    final isFavorite = _favoriteIds.contains(property.id);
+    setState(() {
+      if (isFavorite) {
+        _favoriteIds.remove(property.id);
+      } else {
+        _favoriteIds.add(property.id);
+      }
+    });
+
+    try {
+      final response = isFavorite
+          ? await api.unfavoriteProperty(property.id)
+          : await api.favoriteProperty(property.id);
+      if (!mounted ||
+          (response.statusCode ?? 500) < 200 ||
+          (response.statusCode ?? 500) >= 300) {
+        throw StateError("Favorite request failed");
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        if (isFavorite) {
+          _favoriteIds.add(property.id);
+        } else {
+          _favoriteIds.remove(property.id);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Unable to update favorite")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,15 +170,29 @@ class _Homev1State extends State<Homev1> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_isLoadingProperties)
+              const LinearProgressIndicator(minHeight: 2),
             _buildSearchBar(),
             const SizedBox(height: 12),
             _buildCategoryChips(),
             const SizedBox(height: 16),
-            _buildSectionHeader('Featured Property'),
+            _buildSectionHeader(
+              'Featured Property',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FeaturedScreen()),
+              ),
+            ),
             const SizedBox(height: 20),
             _buildFeaturedList(),
             const SizedBox(height: 20),
-            _buildSectionHeader('Our Recomendation'),
+            _buildSectionHeader(
+              'Our Recomendation',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const RecommendationScreen()),
+              ),
+            ),
             const SizedBox(height: 20),
             _buildRecommendationList(),
             const SizedBox(height: 20),
@@ -138,7 +245,12 @@ class _Homev1State extends State<Homev1> {
             child: IconButton(
               icon: const Icon(Icons.notifications_none, color: Colors.black),
               onPressed: () {
-                // Handle notification button press
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationListScreen(),
+                  ),
+                );
               },
             ),
           ),
@@ -152,6 +264,9 @@ class _Homev1State extends State<Homev1> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: TextFormField(
+        controller: _searchController,
+        textInputAction: TextInputAction.search,
+        onFieldSubmitted: (_) => _searchProperties(),
         decoration: InputDecoration(
           hintText: 'Search apart, hotel, etc.',
           hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -176,16 +291,25 @@ class _Homev1State extends State<Homev1> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final bool isSelected = index == selectedCategoryIndex;
           return GestureDetector(
-            onTap: () => setState(() => selectedCategoryIndex = index),
+            onTap: () {
+              setState(() => selectedCategoryIndex = index);
+              _searchProperties(
+                type: index == 0
+                    ? null
+                    : index == 1
+                    ? 'HOUSE'
+                    : categories[index].toUpperCase(),
+              );
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? primaryGreen.withOpacity(0.15)
+                    ? primaryGreen.withValues(alpha: 0.15)
                     : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
@@ -209,7 +333,7 @@ class _Homev1State extends State<Homev1> {
   }
 
   // ---------------- Section Header ----------------
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, {VoidCallback? onTap}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
@@ -219,12 +343,15 @@ class _Homev1State extends State<Homev1> {
             title,
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
-          const Text(
-            'See All',
-            style: TextStyle(
-              color: primaryGreen,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          GestureDetector(
+            onTap: onTap,
+            child: const Text(
+              'See All',
+              style: TextStyle(
+                color: primaryGreen,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -240,16 +367,18 @@ class _Homev1State extends State<Homev1> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         itemCount: featuredProperties.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final property = featuredProperties[index];
           return _FeaturedCard(
-            title: property['title'],
-            location: property['location'],
-            price: property['price'],
-            beds: property['beds'],
-            baths: property['baths'],
-            imageUrl: property['imageUrl'],
+            title: property.title,
+            location: property.locationLabel,
+            price: _formatPrice(property),
+            beds: property.beds,
+            baths: property.baths,
+            imageUrl: property.imageUrls.isEmpty
+                ? 'assets/images/final.png'
+                : property.imageUrls.first,
           );
         },
       ),
@@ -264,20 +393,28 @@ class _Homev1State extends State<Homev1> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         itemCount: recommendedProperties.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final property = recommendedProperties[index];
           return _RecommendationCard(
-            title: property['title'],
-            location: property['location'],
-            price: property['price'],
-            tag: property['tag'],
-            liked: property['liked'],
-            imageurl: property['imageUrl'],
+            title: property.title,
+            location: property.locationLabel,
+            price: _formatPrice(property),
+            tag: property.type,
+            liked: _favoriteIds.contains(property.id) || property.isFavorite,
+            onFavorite: () => _toggleFavorite(property),
+            imageurl: property.imageUrls.isEmpty
+                ? 'assets/images/third.png'
+                : property.imageUrls.first,
           );
         },
       ),
     );
+  }
+
+  String _formatPrice(PropertyResponse property) {
+    final price = property.price.toStringAsFixed(0);
+    return property.currency.isEmpty ? price : '${property.currency} $price';
   }
 
   // ---------------- News List ----------------
@@ -288,13 +425,19 @@ class _Homev1State extends State<Homev1> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         itemCount: propertyNews.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final news = propertyNews[index];
           return _NewsCard(
-            headline: news['headline'],
-            readTime: news['readTime'],
-            imageUrl: news['imageUrl'],
+            headline: news.title,
+            readTime: '${news.readMinutes} mins read',
+            imageUrl: news.imageUrl?.isNotEmpty == true
+                ? news.imageUrl!
+                : 'assets/images/fourth.png',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => NewsDetailScreen(news: news)),
+            ),
           );
         },
       ),
@@ -315,7 +458,7 @@ class _Homev1State extends State<Homev1> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.15),
+                  color: Colors.grey.withValues(alpha: 0.15),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
@@ -362,7 +505,7 @@ class _Homev1State extends State<Homev1> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: primaryGreen.withOpacity(0.4),
+                      color: primaryGreen.withValues(alpha: 0.4),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -388,14 +531,14 @@ class _Homev1State extends State<Homev1> {
         setState(() {
           selectedNavIndex = index;
         });
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) {
-              return Myaccount();
-            },
-          ),
-        );
+        if (index == 0) return;
+
+        final Widget destination = switch (index) {
+          1 => const ExploreScreen(),
+          2 => const NotificationListScreen(),
+          _ => const Myaccount(),
+        };
+        Navigator.push(context, MaterialPageRoute(builder: (_) => destination));
       },
     );
   }
@@ -428,7 +571,7 @@ class _FeaturedCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
+            color: Colors.grey.withValues(alpha: 0.15),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -437,15 +580,27 @@ class _FeaturedCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Placeholder for property image - replace with Image.network(url) or Image.asset(path)
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.asset(
-              imageUrl,
-              height: 100,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+            child: imageUrl.startsWith('http')
+                ? Image.network(
+                    imageUrl,
+                    height: 100,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => Image.asset(
+                      'assets/images/final.png',
+                      height: 100,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Image.asset(
+                    imageUrl,
+                    height: 100,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -534,6 +689,7 @@ class _RecommendationCard extends StatelessWidget {
   final String price;
   final String tag;
   final bool liked;
+  final VoidCallback onFavorite;
   final String imageurl;
 
   const _RecommendationCard({
@@ -542,6 +698,7 @@ class _RecommendationCard extends StatelessWidget {
     required this.price,
     required this.tag,
     required this.liked,
+    required this.onFavorite,
     required this.imageurl,
   });
 
@@ -554,7 +711,7 @@ class _RecommendationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
+            color: Colors.grey.withValues(alpha: 0.15),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -569,12 +726,25 @@ class _RecommendationCard extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
                 ),
-                child: Image.asset(
-                  imageurl,
-                  height: 100,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+                child: imageurl.startsWith('http')
+                    ? Image.network(
+                        imageurl,
+                        height: 100,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Image.asset(
+                          'assets/images/third.png',
+                          height: 100,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Image.asset(
+                        imageurl,
+                        height: 100,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
               ),
               Positioned(
                 top: 6,
@@ -594,10 +764,13 @@ class _RecommendationCard extends StatelessWidget {
               Positioned(
                 top: 6,
                 right: 6,
-                child: Icon(
-                  liked ? Icons.favorite : Icons.favorite_border,
-                  size: 16,
-                  color: liked ? Colors.red : Colors.white,
+                child: GestureDetector(
+                  onTap: onFavorite,
+                  child: Icon(
+                    liked ? Icons.favorite : Icons.favorite_border,
+                    size: 16,
+                    color: liked ? Colors.red : Colors.white,
+                  ),
                 ),
               ),
             ],
@@ -643,46 +816,64 @@ class _NewsCard extends StatelessWidget {
   final String headline;
   final String readTime;
   final String imageUrl;
+  final VoidCallback? onTap;
 
   const _NewsCard({
     required this.headline,
     required this.readTime,
     required this.imageUrl,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 170,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Image.asset(
-              imageUrl,
-              height: 100,
-              width: double.infinity,
-              fit: BoxFit.cover,
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 170,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: imageUrl.startsWith('http')
+                  ? Image.network(
+                      imageUrl,
+                      height: 100,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Image.asset(
+                        'assets/images/fourth.png',
+                        height: 100,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : Image.asset(
+                      imageUrl,
+                      height: 100,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            headline,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              height: 1.3,
+            const SizedBox(height: 6),
+            Text(
+              headline,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            readTime,
-            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              readTime,
+              style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
       ),
     );
   }
