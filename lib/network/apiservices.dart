@@ -219,4 +219,6 @@ class ApiServices {
   Future<Response> addnewcard(Map<String, dynamic> parameters) {
     return networkClient.post(Constants.addnewcard, parameters);
   }
+
+  Future<Object?> addProperty(Map<String, Object> map) async {}
 }

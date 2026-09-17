@@ -19,7 +19,9 @@ class PaymentMethodResponse {
     required this.expired,
   });
 
-  factory PaymentMethodResponse.fromJson(Map<String, dynamic> json) =>
+  factory PaymentMethodResponse.fromJson(
+    Map<String, dynamic> json,
+  ) =>
       PaymentMethodResponse(
         id: (json["id"] as num).toInt(),
         type: json["type"] as String? ?? "CARD",
@@ -31,6 +33,10 @@ class PaymentMethodResponse {
         expired: json["expired"] as bool? ?? false,
       );
 }
+
+// ============================================================
+// ADD CARD REQUEST
+// ============================================================
 
 class AddCardRequest {
   final String holderName;
@@ -48,13 +54,17 @@ class AddCardRequest {
   });
 
   Map<String, dynamic> toJson() => {
-    'holderName': holderName,
-    'cardNumber': cardNumber,
-    'expMonth': expMonth,
-    'expYear': expYear,
-    'makeDefault': makeDefault,
-  };
+        'holderName': holderName,
+        'cardNumber': cardNumber,
+        'expMonth': expMonth,
+        'expYear': expYear,
+        'makeDefault': makeDefault,
+      };
 }
+
+// ============================================================
+// TWO FACTOR AUTHENTICATION STATUS
+// ============================================================
 
 class TotpStatusResponse {
   final bool enabled;
@@ -67,10 +77,13 @@ class TotpStatusResponse {
     required this.recoveryCodesRemaining,
   });
 
-  factory TotpStatusResponse.fromJson(Map<String, dynamic> json) =>
+  factory TotpStatusResponse.fromJson(
+    Map<String, dynamic> json,
+  ) =>
       TotpStatusResponse(
         enabled: json["enabled"] as bool? ?? false,
-        enrolmentStarted: json["enrolmentStarted"] as bool? ?? false,
+        enrolmentStarted:
+            json["enrolmentStarted"] as bool? ?? false,
         recoveryCodesRemaining:
             (json["recoveryCodesRemaining"] as num?)?.toInt() ?? 0,
       );

@@ -14,7 +14,7 @@ class Notifications extends StatefulWidget {
 class _NotificationsState extends State<Notifications> {
   static const Color primaryGreen = Color(0xFF0C8A43);
 
-  // Map to maintain toggle state for each setting
+  // Notification settings
   final Map<String, bool> _notificationSettings = {
     'Notifications': true,
     'Sound': false,
@@ -24,7 +24,9 @@ class _NotificationsState extends State<Notifications> {
     'Cashback': false,
     'App Updates': false,
   };
+
   final ApiServices _api = ApiServices(NetworkClient());
+
   bool _isLoading = true;
 
   @override
@@ -33,13 +35,24 @@ class _NotificationsState extends State<Notifications> {
     _loadPreferences();
   }
 
+  // ============================================================
+  // LOAD NOTIFICATION PREFERENCES
+  // ============================================================
+
   Future<void> _loadPreferences() async {
     try {
       final response = await _api.notificationPreferences();
-      if (!mounted || response.statusCode != 200) return;
+
+      if (!mounted || response.statusCode != 200) {
+        return;
+      }
+
       final data = response.data;
+
       if (data is Map<String, dynamic>) {
-        final preferences = NotificationPreferencesResponse.fromJson(data);
+        final preferences =
+            NotificationPreferencesResponse.fromJson(data);
+
         setState(() {
           _notificationSettings.addAll({
             'Notifications': preferences.notifications,
@@ -52,6 +65,8 @@ class _NotificationsState extends State<Notifications> {
           });
         });
       }
+    } catch (e) {
+      debugPrint('Notification preference loading error: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -61,12 +76,23 @@ class _NotificationsState extends State<Notifications> {
     }
   }
 
-  Future<void> _updatePreference(String key, bool value) async {
-    final previousValue = _notificationSettings[key] ?? false;
+  // ============================================================
+  // UPDATE NOTIFICATION PREFERENCE
+  // ============================================================
+
+  Future<void> _updatePreference(
+    String key,
+    bool value,
+  ) async {
+    final previousValue =
+        _notificationSettings[key] ?? false;
+
+    // Update UI immediately
     setState(() {
       _notificationSettings[key] = value;
     });
 
+    // Convert UI key to API key
     final apiKey = {
       'Notifications': 'notifications',
       'Sound': 'sound',
@@ -77,35 +103,65 @@ class _NotificationsState extends State<Notifications> {
       'App Updates': 'appUpdates',
     }[key];
 
-    if (apiKey == null) return;
+    if (apiKey == null) {
+      return;
+    }
 
     try {
-      final response = await _api.updateNotificationPreferences({
+      final response =
+          await _api.updateNotificationPreferences({
         apiKey: value,
       });
-      if (!mounted || response.statusCode == 200) return;
+
+      // Success
+      if (!mounted || response.statusCode == 200) {
+        return;
+      }
+
+      // API failed, restore previous value
       setState(() {
         _notificationSettings[key] = previousValue;
       });
-    } catch (_) {
+    } catch (e) {
+      // Error, restore previous value
       if (mounted) {
         setState(() {
           _notificationSettings[key] = previousValue;
         });
       }
+
+      debugPrint(
+        'Notification preference update error: $e',
+      );
     }
   }
 
+  // ============================================================
+  // BUILD SCREEN
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
-    final settingsKeys = _notificationSettings.keys.toList();
+    final settingsKeys =
+        _notificationSettings.keys.toList();
 
     return Scaffold(
       backgroundColor: Colors.white,
+
+      // ========================================================
+      // APP BAR
+      // ========================================================
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        surfaceTintColor: Colors.white,
         centerTitle: true,
+
+        // ======================================================
+        // BACK BUTTON
+        // ======================================================
+
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Container(
@@ -114,11 +170,27 @@ class _NotificationsState extends State<Notifications> {
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black, size: 20),
-              onPressed: () => Navigator.of(context).maybePop(),
+              icon: const Icon(
+                Icons.arrow_back,
+                color: Colors.black,
+                size: 20,
+              ),
+
+              // ================================================
+              // NAVIGATE BACK
+              // ================================================
+
+              onPressed: () {
+                Navigator.pop(context);
+              },
             ),
           ),
         ),
+
+        // ======================================================
+        // TITLE
+        // ======================================================
+
         title: const Text(
           'Notifications',
           style: TextStyle(
@@ -128,20 +200,51 @@ class _NotificationsState extends State<Notifications> {
           ),
         ),
       ),
+
+      // ========================================================
+      // BODY
+      // ========================================================
+
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20.0,
+            vertical: 12.0,
+          ),
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200, width: 1.5),
+              border: Border.all(
+                color: Colors.grey.shade200,
+                width: 1.5,
+              ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
-                if (_isLoading) const LinearProgressIndicator(minHeight: 2),
+                // ==============================================
+                // LOADING
+                // ==============================================
+
+                if (_isLoading)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 10),
+                    child: LinearProgressIndicator(
+                      minHeight: 2,
+                      color: primaryGreen,
+                    ),
+                  ),
+
+                // ==============================================
+                // SECTION TITLE
+                // ==============================================
+
                 Text(
                   'Push Notifications',
                   style: TextStyle(
@@ -150,41 +253,82 @@ class _NotificationsState extends State<Notifications> {
                     color: Colors.grey.shade600,
                   ),
                 ),
+
                 const SizedBox(height: 8),
+
+                // ==============================================
+                // SETTINGS LIST
+                // ==============================================
+
                 ListView.separated(
                   shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
+                  physics:
+                      const NeverScrollableScrollPhysics(),
                   itemCount: settingsKeys.length,
-                  separatorBuilder: (context, index) => Divider(
+
+                  separatorBuilder: (
+                    context,
+                    index,
+                  ) =>
+                      Divider(
                     color: Colors.grey.shade200,
                     height: 20,
                     thickness: 1,
                   ),
-                  itemBuilder: (context, index) {
+
+                  itemBuilder: (
+                    context,
+                    index,
+                  ) {
                     final key = settingsKeys[index];
-                    final isEnabled = _notificationSettings[key] ?? false;
+
+                    final isEnabled =
+                        _notificationSettings[key] ??
+                            false;
 
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                      padding:
+                          const EdgeInsets.symmetric(
+                        vertical: 2.0,
+                      ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment:
+                            MainAxisAlignment
+                                .spaceBetween,
                         children: [
-                          Text(
-                            key,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
+                          // Setting name
+                          Expanded(
+                            child: Text(
+                              key,
+                              style:
+                                  const TextStyle(
+                                fontSize: 15,
+                                fontWeight:
+                                    FontWeight.w500,
+                                color: Colors.black,
+                              ),
                             ),
                           ),
+
+                          // Toggle switch
                           Transform.scale(
                             scale: 0.85,
                             child: CupertinoSwitch(
                               value: isEnabled,
-                              activeTrackColor: primaryGreen,
-                              inactiveTrackColor: Colors.grey.shade200,
-                              onChanged: (bool value) =>
-                                  _updatePreference(key, value),
+                              activeTrackColor:
+                                  primaryGreen,
+                              inactiveTrackColor:
+                                  Colors
+                                      .grey.shade200,
+                              onChanged:
+                                  _isLoading
+                                      ? null
+                                      : (bool value) {
+                                          _updatePreference(
+                                            key,
+                                            value,
+                                          );
+                                        },
                             ),
                           ),
                         ],

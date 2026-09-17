@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobil_app_project/Screens/Onboarding_Scrrens/mainsliderscreen.dart';
 import 'package:mobil_app_project/Screens/uthentication/loginemptypage.dart';
 
 void main() {
@@ -13,7 +14,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const Loginemptypage(),
+      home: Mainsliderscreen(),
     );
   }
 }
